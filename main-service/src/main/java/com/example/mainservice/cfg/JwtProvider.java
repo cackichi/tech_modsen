@@ -4,8 +4,7 @@ import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.userdetails.User;
+import lombok.AllArgsConstructor;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
@@ -13,13 +12,11 @@ import java.security.Key;
 import java.util.Date;
 
 @Service
+@AllArgsConstructor
 public class JwtProvider {
-    private final Key jwtSecret;
+    private final String secret = "111111111111111111111111111111111111111111111111111111111111111111111111111111";
+    private final Key jwtSecret = Keys.hmacShaKeyFor(secret.getBytes());
     private final long jwtExp = 3600000;
-
-    public JwtProvider() {
-        this.jwtSecret = Keys.secretKeyFor(SignatureAlgorithm.HS512);
-    }
 
     public String generateToken(UserDetails user){
         Date now = new Date();
@@ -34,8 +31,9 @@ public class JwtProvider {
     }
 
     public String getUsernameFromJWT(String token) {
-        return Jwts.parser()
+        return Jwts.parserBuilder()
                 .setSigningKey(jwtSecret)
+                .build()
                 .parseClaimsJws(token)
                 .getBody()
                 .getSubject();

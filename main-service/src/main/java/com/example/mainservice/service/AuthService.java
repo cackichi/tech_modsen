@@ -7,6 +7,8 @@ import com.example.mainservice.models.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -27,6 +29,9 @@ public class AuthService {
         userService.createUser(user);
 
         var jwt = jwtProvider.generateToken(user);
+
+        setAuthentication(user, jwt);
+
         return new AuthResponse(jwt);
     }
 
@@ -35,8 +40,19 @@ public class AuthService {
                 request.getUsername(),
                 request.getPassword()
         ));
+
         var user = userService.loadUserByUsername(request.getUsername());
+
         var jwt = jwtProvider.generateToken(user);
+
+        setAuthentication(user, jwt);
+
         return new AuthResponse(jwt);
+    }
+
+    private void setAuthentication(UserDetails user, String token) {
+        var authToken = new UsernamePasswordAuthenticationToken(user, token, user.getAuthorities());
+
+        SecurityContextHolder.getContext().setAuthentication(authToken);
     }
 }

@@ -6,7 +6,9 @@ import com.example.mainservice.service.BookService;
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.springframework.dao.EmptyResultDataAccessException;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
@@ -29,10 +31,13 @@ public class BookController {
         return books.stream().map(book -> bookService.convertToDTO(book)).toList();
     }
 
+    @Operation(summary = "Получить список свободных книг")
     @GetMapping("/all/free")
     @ResponseStatus(HttpStatus.OK)
-    public List<BookDTO> findFreeBooks(){
-        return bookService.findFree();
+    public List<BookDTO> findFreeBooks(@RequestHeader(name = "Authorization", required = false) String authHeader){
+        var headers = new HttpHeaders();
+        headers.set("Authorization", authHeader);
+        return bookService.findFree(headers);
     }
 
     @Operation(summary = "Получить книгу по id")

@@ -7,7 +7,11 @@ import com.example.mainservice.models.BookKeepingDTO;
 import com.example.mainservice.repositories.BookRepository;
 import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
@@ -17,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+@Slf4j
 @Service
 @AllArgsConstructor
 public class BookService {
@@ -25,6 +30,8 @@ public class BookService {
     private final BookRepository bookRepository;
 
     private final ModelMapper modelMapper;
+
+    private final UserService userService;
 
     public BookDTO convertToDTO(Book book){
         return modelMapper.map(book, BookDTO.class);
@@ -46,16 +53,28 @@ public class BookService {
     }
 
     public Book save(Book book){
+        String token = userService.getUserJwtToken();
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("Authorization", "Bearer " + token);
+
         Book savedBook = bookRepository.save(book);
-        Long request = savedBook.getId();
+        HttpEntity<Long> request = new HttpEntity<>(savedBook.getId(), headers);
         String urlLibrary = "http://localhost:8081/library-service/api/keep/save";
         restTemplate.postForEntity(urlLibrary, request, String.class);
         return savedBook;
     }
 
-    public List<BookDTO> findFree(){
+    public List<BookDTO> findFree(HttpHeaders headers){
+        HttpEntity<String> entity = new HttpEntity<>(headers);
         String urlLibrary = "http://localhost:8081/library-service/api/keep/free";
-        ResponseEntity<BookKeepingDTO[]> response =  restTemplate.getForEntity(urlLibrary,BookKeepingDTO[].class);
+
+        ResponseEntity<BookKeepingDTO[]> response = restTemplate.exchange(
+                urlLibrary,
+                HttpMethod.GET,
+                new HttpEntity<>(headers),
+                BookKeepingDTO[].class
+        );
         List<BookKeepingDTO> bookKeepingDTOS = Arrays.asList(response.getBody());
         List<Book> books = findAll();
         List<BookDTO> result = new ArrayList<>();
